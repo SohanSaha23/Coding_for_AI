@@ -1,0 +1,192 @@
+================================================================================
+EXECUTION TRACE - Problem Set 2.1 (Bonus)
+Autonomous Environmental Safety Tiering
+Author : SOHAN SAHA
+Date   : 21/08/2026
+Script : assign 2.1.py
+================================================================================
+
+Each scenario below shows the console session followed by the logic path the
+interpreter actually took through the decision chain.
+
+
+--------------------------------------------------------------------------------
+SCENARIO (a) - EMPTY INPUT, CAUGHT BY THE WALRUS-OPERATOR CHECK
+--------------------------------------------------------------------------------
+
+CONSOLE SESSION
+    === Autonomous Environmental Safety Tiering ===
+    Operator ID: SOHAN SAHA
+    Telemetry session opened by: SOHAN SAHA
+    Temperature (C):
+    Safety Level: Unknown
+
+    (the user pressed Enter at the Temperature prompt without typing anything)
+
+LOGIC PATH
+    1. operator_id = input(...).strip() or "Guest_User"
+       -> "SOHAN SAHA" is truthy, so `or` returns it and the default is
+          never evaluated.
+
+    2. if not (temp_str := input("Temperature (C): ").strip()):
+       -> input() returns ""
+       -> .strip() returns ""
+       -> temp_str is bound to "" by the walrus, in the same expression
+       -> "" is falsy, so `not ""` is True
+       -> BRANCH TAKEN
+
+    3. print(UNKNOWN_MESSAGE)  ->  "Safety Level: Unknown"
+
+    4. Program ends gracefully. Note what did NOT happen:
+       - Humidity and Wind were never prompted for (elif short-circuits).
+       - float() was never called, so no ValueError was ever raised.
+       This is failure mode 1 (emptiness), handled entirely by the walrus
+       check, before conversion is ever attempted.
+
+
+--------------------------------------------------------------------------------
+SCENARIO (b) - CRITICAL HEATWAVE READING
+--------------------------------------------------------------------------------
+
+CONSOLE SESSION
+    === Autonomous Environmental Safety Tiering ===
+    Operator ID: SOHAN SAHA
+    Telemetry session opened by: SOHAN SAHA
+    Temperature (C): 32
+    Humidity (%): 80
+    Wind speed (km/h): 10
+    Derived Heat Stress Index: 72.0 (Unsafe)
+    Safety Level: CRITICAL
+
+LOGIC PATH
+    1. All three walrus checks pass: "32", "80" and "10" are non-empty.
+
+    2. try: float() conversion of all three succeeds, so the except ValueError
+       block is skipped and the else clause of the try runs.
+
+    3. assert humidity >= 0  ->  80.0 >= 0 is True, execution continues.
+
+    4. hsi = 32.0 + (0.5 * 80.0) = 32.0 + 40.0 = 72.0
+
+    5. risk_label = "Safe" if hsi < 30 else "Unsafe"
+       -> 72.0 < 30 is False  ->  "Unsafe"
+
+    6. TIERING CHAIN
+       Test 1: temperature <= 0    ->  32.0 <= 0    ->  False, fall through
+       Test 2: hsi > 45            ->  72.0 > 45    ->  True
+               `or` SHORT-CIRCUITS here: the second operand
+               (temperature > 38 and humidity > 70) is never evaluated,
+               because `or` already has a truthy operand.
+       -> tier = "CRITICAL"
+
+    7. Tests 3 and 4 (CAUTIONARY, OPERATIONAL) are never reached, so the
+       battery-level prompt is correctly skipped.
+
+    8. print(f"Safety Level: {tier}")  ->  "Safety Level: CRITICAL"
+
+
+--------------------------------------------------------------------------------
+SCENARIO (c) - CAUTIONARY READING, THEN ADJUSTED BY THE BATTERY-LEVEL LOGIC
+--------------------------------------------------------------------------------
+
+CONSOLE SESSION
+    === Autonomous Environmental Safety Tiering ===
+    Operator ID: SOHAN SAHA
+    Telemetry session opened by: SOHAN SAHA
+    Temperature (C): 25
+    Humidity (%): 20
+    Wind speed (km/h): 3
+    Derived Heat Stress Index: 35.0 (Unsafe)
+    Battery level (%): 15
+    Battery low: robot failure risk in sustained heat.
+    Safety Level: CRITICAL
+
+LOGIC PATH
+    1. All three walrus checks pass; all three float() conversions succeed.
+
+    2. assert humidity >= 0  ->  20.0 >= 0 is True.
+
+    3. hsi = 25.0 + (0.5 * 20.0) = 25.0 + 10.0 = 35.0
+       risk_label = "Unsafe"  (35.0 < 30 is False)
+
+    4. TIERING CHAIN
+       Test 1: temperature <= 0                 ->  False, fall through
+       Test 2: hsi > 45                         ->  35.0 > 45 is False
+               temperature > 38                 ->  25.0 > 38 is False
+               `and` SHORT-CIRCUITS: humidity > 70 is never evaluated.
+               Whole condition False, fall through.
+       Test 3: hsi >= 30                        ->  35.0 >= 30 is True
+               wind_speed < 5                   ->  3.0 < 5 is True
+       -> tier = "CAUTIONARY"
+
+       Note: the upper bound hsi <= 45 is deliberately NOT re-tested in
+       Test 3. Test 2 already established that hsi is not greater than 45,
+       so re-checking it would be a redundant comparison.
+
+    5. NESTED BATTERY CHECK (runs only inside the CAUTIONARY branch)
+       battery_str = "15"  ->  battery_level = 15.0
+       15.0 < 20  ->  True  ->  tier is REASSIGNED to "CRITICAL"
+
+    6. print(f"Safety Level: {tier}")  ->  "Safety Level: CRITICAL"
+
+       The site was classified CAUTIONARY on climate alone, then elevated to
+       CRITICAL because the robot cannot be relied upon to survive sustained
+       heat at 15% charge. The adjustment happens after the primary tier is
+       determined, exactly as specified.
+
+
+================================================================================
+SUPPORTING VERIFICATION - THE FOUR WORKED EXAMPLES FROM SECTION 3.2
+================================================================================
+
+    Temp   Humidity   Wind    HSI    Expected Tier    Actual Tier    Result
+    ----   --------   ----   -----   -------------    -----------    ------
+     -5       50       --     20.0   FREEZE ALERT     FREEZE ALERT   PASS
+     32       80       --     72.0   CRITICAL         CRITICAL       PASS
+     25       20        3     35.0   CAUTIONARY       CAUTIONARY     PASS
+     20       10       10     25.0   OPERATIONAL      OPERATIONAL    PASS
+
+
+================================================================================
+SUPPORTING VERIFICATION - EDGE CASES FROM SECTION 5
+================================================================================
+
+    THE ZERO-VALUE CASE
+      Input: temperature 0, humidity 100, wind 10
+      Output: Derived Heat Stress Index: 50.0 (Unsafe)
+              Safety Level: FREEZE ALERT
+
+      This single case proves both design decisions at once:
+        - The reading survives validation. "0" is a non-empty string and
+          therefore truthy, so the walrus check accepts it. Had the check
+          been made on the converted number, 0.0 is falsy and a genuine
+          reading would have been discarded as a blank field.
+        - HSI is 50.0, which is greater than 45 and so satisfies the
+          CRITICAL condition. Because FREEZE ALERT is tested first, the
+          site is correctly reported as freezing rather than as a heat
+          emergency. This is the precise misclassification that the
+          order of evaluation is designed to prevent.
+
+    NON-NUMERIC INPUT
+      Input: temperature "warm"
+      Output: Safety Level: Unknown
+      float("warm") raises ValueError, caught by the except block and
+      treated identically to an empty field. This is failure mode 2.
+
+    NEGATIVE HUMIDITY
+      Input: temperature 25, humidity -10
+      Output: AssertionError: Telemetry Error: Negative Humidity
+      The program halts. This is intentional: negative humidity is not a
+      physically possible reading, which is a different class of problem
+      from a user simply leaving a field blank, and should not be quietly
+      absorbed into "Unknown".
+
+    BLANK OPERATOR ID
+      Input: Enter pressed at the Operator ID prompt
+      Output: Telemetry session opened by: Guest_User
+      input() returns "", which is falsy, so `or` evaluates and returns its
+      second operand.
+
+================================================================================
+END OF TRACE
+================================================================================

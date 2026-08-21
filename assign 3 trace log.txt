@@ -1,0 +1,33 @@
+--- Stage 1: Input Validation ---
+Original packet: [5, 12, 0, 8, 21, 34, 7, 19, 0, 3]
+Validation passed. Processing packet...
+
+--- Stage 2: Middle-Out Swap ---
+Front half: [5, 12, 0, 8, 21]
+Back half : [34, 7, 19, 0, 3]
+Scrambled : [3, 0, 19, 7, 34, 5, 12, 0, 8, 21]
+id(packet) == id(front_half) -> False   # Expect: False
+
+--- Stage 3: In-Place Correction ---
+Middle index 5 holds: 5
+After sync-bit insertion: [3, 0, 19, 7, 34, 5, 'SYNC-BIT', 12, 0, 8, 21]
+After zero removal      : [3, 19, 7, 34, 5, 'SYNC-BIT', 12, 8, 21]
+
+--- Stage 4: Memory Integrity Check ---
+Original packet : [5, 12, 0, 8, 21, 34, 7, 19, 0, 3]
+Final scrambled : [3, 19, 7, 34, 5, 'SYNC-BIT', 12, 8, 21]
+Header: 3  Footer: 21  Body length: 7
+Original packet intact: True
+
+=== Stretch Goal: Edge-Case Test Packets ===
+
+Odd-length input : [5, 12, 0, 8, 21, 34, 7, 19, 0, 3, 99]
+  front half len 5, back half len 6 (unequal)
+  Output         : [99, 3, 19, 7, 34, 'SYNC-BIT', 5, 12, 8, 21]
+  Input intact   : True
+
+No-zeros input   : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  Output         : [10, 9, 8, 7, 6, 1, 'SYNC-BIT', 2, 3, 4, 5]
+
+Float-at-middle  : [1.5, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  Output         : [10, 9, 8, 7, 6, 1.5, 2, 3, 4, 5]   # no SYNC-BIT inserted
