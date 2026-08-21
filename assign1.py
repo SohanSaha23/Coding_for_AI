@@ -16,7 +16,6 @@ def main():
     """Run the interactive Temporal Profile Analyzer."""
     user_full_name = input("Enter your full name: ").strip()
 
-    # Edge case 1: name is empty or was only whitespace before stripping.
     if not user_full_name:
         print("Error: A name cannot be empty or whitespace only. Exiting.")
         return
@@ -25,8 +24,6 @@ def main():
     formatted_name = user_full_name.title()
 
     user_age = input("Enter your current age in whole years: ").strip()
-
-    # Edge case 2: guard the int() conversion instead of letting it raise.
     if not user_age.isdigit():
         print(f"Error: '{user_age}' is not a whole number. Age must be digits "
               f"only, for example 20. Exiting.")
@@ -34,7 +31,6 @@ def main():
 
     current_age = int(user_age)
 
-    # Edge case 3: 0 is accepted; absurd values are rejected as out of range.
     if current_age > MAX_REASONABLE_AGE:
         print(f"Error: Age must be between 0 and {MAX_REASONABLE_AGE}. Exiting.")
         return
@@ -51,7 +47,6 @@ def main():
     print(f"Projected Age in {SINGULARITY_YEAR} : {age_in_2045}")
     print(f"AI Readiness Score    : {readiness_score:.2f}")
 
-    # Challenge task: repeat the name once per unit of the age's first digit.
     first_digit = int(user_age[0])
 
     if first_digit == 0:
