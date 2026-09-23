@@ -1,0 +1,50 @@
+================================================================
+SUBMISSION NOTE  (Deliverable iii)
+Problem Set 8
+Author : SOHAN SAHA
+Date   : 23/09/2026
+================================================================
+
+I opened a shell in /tmp - a directory with no relationship to the
+package folder - and ran import vsearch. It succeeded, and
+vsearch.__file__ reported site-packages/vsearch.py, confirming the
+name had resolved to the installed package. The call
+search4letters('TGGACC', 'GC') then returned {'G', 'C'} as expected.
+
+Testing the import from inside the package folder would have proved
+nothing, because Python places the current directory at the front of
+sys.path. A loose vsearch.py sitting in that folder is therefore found
+before site-packages is ever consulted, and the import would succeed
+identically whether or not pip had installed anything at all. I
+confirmed this directly rather than assuming it: run from inside the
+folder, vsearch.__file__ pointed at the local source file; run from
+/tmp, it pointed into site-packages. Only the second location actually
+exercises the installation, which is why it is the one that counts.
+
+----------------------------------------------------------------
+EVIDENCE - the same import from two different directories
+----------------------------------------------------------------
+
+From INSIDE the package folder:
+
+    $ cd "assign 10"
+    $ python -c "import vsearch; print(vsearch.__file__)"
+    /home/assign 10/vsearch.py          <- the loose source
+
+From OUTSIDE it:
+
+    $ cd /tmp
+    $ python -c "import vsearch; print(vsearch.__file__)"
+    .../site-packages/vsearch.py               <- the installed copy
+
+    $ python
+    >>> import vsearch
+    >>> vsearch.search4letters('TGGACC', 'GC')
+    {'G', 'C'}
+    >>> vsearch.search4vowels('hitch-hiker')
+    {'i', 'e'}
+
+The two file paths differ, which is the whole point: an import run
+from inside the folder never touches the installed package, so it
+cannot tell a successful installation apart from a failed one.
+================================================================

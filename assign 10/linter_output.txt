@@ -1,0 +1,162 @@
+================================================================
+BEFORE / AFTER LINTER OUTPUT  (Deliverable ii)
+Problem Set 8 - Task 2
+Author : SOHAN SAHA
+Date   : 23/09/2026
+Checker: pycodestyle 2.15.0, Python 3.11
+================================================================
+
+THE THREE DELIBERATELY INJECTED FLAWS (Section 3.2)
+----------------------------------------------------------------
+  (i)   line 1  - missing space after the colon in a type hint:
+                  "phrase:str" instead of "phrase: str"
+  (ii)  line 2  - one trailing space after the closing docstring
+                  quotes, before the newline
+  (iii) line 4  - zero blank lines between two top-level function
+                  definitions, where PEP 8 requires two
+
+The flawed file is preserved alongside this report as
+vsearch_flawed_copy.py so the injected state can be re-checked.
+
+Flawed file, exactly as linted:
+
+     1  def search4letters(phrase:str, letters: str = 'aeiou') -> set:
+     2      """Return the set of 'letters' found in 'phrase'."""·
+     3      return set(letters).intersection(set(phrase))
+     4  def search4vowels(phrase: str) -> set:
+     5      """Return any vowels found in a supplied phrase."""
+     6      return search4letters(phrase, 'aeiou')
+
+     (the · on line 2 marks the trailing space; it is a real space
+      in the file, shown here only so it is visible on the page)
+
+
+================================================================
+BEFORE  -  $ python3 -m pycodestyle vsearch.py
+================================================================
+vsearch.py:1:26: E231 missing whitespace after ':'
+vsearch.py:2:57: W291 trailing whitespace
+vsearch.py:4:1: E302 expected 2 blank lines, found 0
+
+Exit code: 1
+
+
+READING THE LOCATION FIELDS
+----------------------------------------------------------------
+Each line follows filename:line:column: CODE message.
+
+  1:26  column 26 of line 1 is the colon in "phrase:str". Counting
+        across: "def " is 4 characters, "search4letters" is 14 more
+        (ending at 18), "(" is 19, "phrase" runs 20-25, so the colon
+        lands exactly on 26.
+  2:57  line 2 holds 56 visible characters, so the trailing space
+        begins at column 57.
+  4:1   E302 is reported against the start of the offending
+        definition, which begins in column 1.
+
+WHAT EACH CODE MEANS AND HOW IT WAS FIXED
+----------------------------------------------------------------
+  E231  Missing whitespace after ':'.
+        FIX: wrote "phrase: str" with a space after the colon.
+  W291  Trailing whitespace.
+        FIX: deleted the space after the last visible character.
+  E302  Expected 2 blank lines, found 0.
+        FIX: inserted two blank lines between the two top-level
+             function definitions.
+
+
+================================================================
+AFTER  -  $ python3 -m pycodestyle vsearch.py
+================================================================
+(no output)
+
+Exit code: 0
+
+pycodestyle prints nothing on success - it has no "all clear"
+banner. The silence IS the pass, and the exit code confirms it:
+
+    $ python3 -m pycodestyle vsearch.py; echo "Exit code: $?"
+    Exit code: 0
+
+Final clean file:
+
+     1  def search4letters(phrase: str, letters: str = 'aeiou') -> set:
+     2      """Return the set of 'letters' found in 'phrase'."""
+     3      return set(letters).intersection(set(phrase))
+     4
+     5
+     6  def search4vowels(phrase: str) -> set:
+     7      """Return any vowels found in a supplied phrase."""
+     8      return search4letters(phrase, 'aeiou')
+
+
+================================================================
+SECTION 4 (i) - A FOURTH, DIFFERENT FLAW
+================================================================
+I lengthened the line 2 docstring to 107 characters and re-ran the
+checker on a scratch copy:
+
+    vsearch_e501.py:2:80: E501 line too long (107 > 79 characters)
+    Exit code: 1
+
+E501 means the physical line exceeds the maximum line length.
+PEP 8 sets that limit at 79 characters for code. Note the column:
+the violation is reported at column 80, which is the first
+character PAST the limit rather than the end of the line - the
+checker points at where the line should have stopped.
+
+FIX: split the docstring across two lines, or shorten it.
+
+
+================================================================
+SECTION 4 (ii) - REINSTALLING AFTER A CODE CHANGE
+================================================================
+I appended a new function to vsearch.py AFTER installing, then
+asked the installed copy for it from outside the package folder:
+
+    hasattr(vsearch, 'marker_added_after_install') -> False
+
+The installed copy is a snapshot taken at install time, not a live
+link to the source file. Rebuilding and force-reinstalling:
+
+    $ python3 -m build --sdist
+    $ python3 -m pip install --force-reinstall dist/vsearch-1.0.tar.gz
+      Uninstalling vsearch-1.0:
+        Successfully uninstalled vsearch-1.0
+      Successfully installed vsearch-1.0
+
+    hasattr(vsearch, 'marker_added_after_install') -> True
+
+The experimental function was then removed and a clean 1.0 rebuilt
+and reinstalled, which is the state shipped here.
+
+
+================================================================
+SECTION 4 (iii) - VERSION NUMBERING
+================================================================
+I changed version='1.0' to version='1.1' in setup.py and rebuilt:
+
+    $ python3 -m build --sdist
+    Successfully built vsearch-1.1.tar.gz
+
+The tarball is named from the version field, so dist/ then held
+both vsearch-1.0.tar.gz and vsearch-1.1.tar.gz. Installing 1.1
+required no manual uninstall first - pip removed the old version
+by itself:
+
+    $ python3 -m pip install dist/vsearch-1.1.tar.gz
+        Uninstalling vsearch-1.0:
+          Successfully uninstalled vsearch-1.0
+      Successfully installed vsearch-1.1
+
+    $ python3 -m pip show vsearch
+    Version: 1.1
+
+setup.py has since been restored to version='1.0' to match the
+configuration Task 1 specifies, and 1.0 reinstalled. Both tarballs
+remain in dist/ as evidence of the experiment.
+
+
+================================================================
+END OF REPORT
+================================================================

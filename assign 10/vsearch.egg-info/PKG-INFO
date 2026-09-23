@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: vsearch
+Version: 1.0
+Summary: Text search tools for AI pre-processing
+Home-page: localhost
+Author: Mtech AI Student
+Author-email: student@school.edu
+Dynamic: author
+Dynamic: author-email
+Dynamic: home-page
+Dynamic: summary
